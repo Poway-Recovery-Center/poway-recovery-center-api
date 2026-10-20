@@ -25,9 +25,10 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `api/user.py`: REST API for sign up, log in/out, profile, admin user list
 - `model/schedule.py`: `Meeting` and `Booking` models; `sync_meetings()` pulls the center's real weekly meetings from the live feed
 - `api/schedule.py`: REST API for the meeting calendar and spot reservations
+- `model/contact.py`, `api/contact.py`: messages from the Contact Us form (admins read them on their profile page)
 - `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`
 - `.env`: secret key and passwords (not committed)
-- `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings; created on first run, not committed)
+- `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings, contact messages; created on first run, not committed)
 - `Dockerfile`, `docker-compose.yml`: production server (gunicorn on port 8587)
 
 ### Accounts
@@ -55,6 +56,10 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | GET | `/api/user` | Admin only: list every user |
 | DELETE | `/api/user` | Admin only: delete a user `{uid}` |
 | POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`, default `gemini-2.5-flash`) |
+| POST | `/api/contact` | Contact Us form `{name, message, topic?, email?, phone?}` (anyone) |
+| GET | `/api/contact` | Admin only: every contact message, newest first |
+| PUT | `/api/contact` | Admin only: mark a message handled `{id, handled}` |
+| GET | `/api/contact/topics` | Topics offered in the form |
 | GET | `/api/schedule?start=YYYY-MM-DD&days=7` | Calendar: each day from `start` (default today, Poway time) for `days` (max 42) with its sessions, spots left, and `booked_by_me` when logged in |
 | GET | `/api/schedule/meetings` | The weekly recurring meeting list |
 | PUT | `/api/schedule/meetings` | Admin only: set spots per session `{id, capacity}` |

@@ -11,8 +11,10 @@ from flask import jsonify
 
 from __init__ import app, db
 from api.chat import chat_api
+from api.contact import contact_api
 from api.schedule import schedule_api
 from api.user import user_api
+from model.contact import initContacts
 from model.schedule import initSchedules
 from model.user import initUsers
 
@@ -20,6 +22,7 @@ from model.user import initUsers
 # Register URIs for API endpoints
 app.register_blueprint(user_api)
 app.register_blueprint(chat_api)
+app.register_blueprint(contact_api)
 app.register_blueprint(schedule_api)
 
 
@@ -31,6 +34,7 @@ def index():
 # Create the database, default users, and current meeting schedule whenever the app starts (python main.py or gunicorn)
 initUsers()
 initSchedules()
+initContacts()
 
 if __name__ == "__main__":
     print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
