@@ -23,9 +23,11 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `model/user.py`: `User` model and `initUsers()` default users
 - `api/jwt_authorize.py`: `@token_required` JWT cookie guard
 - `api/user.py`: REST API for sign up, log in/out, profile, admin user list
+- `model/schedule.py`: `Meeting` and `Booking` models; `sync_meetings()` pulls the center's real weekly meetings from the live feed
+- `api/schedule.py`: REST API for the meeting calendar and spot reservations
 - `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`
 - `.env`: secret key and passwords (not committed)
-- `instance/volumes/user_management.db`: SQLite database (created on first run, not committed)
+- `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings; created on first run, not committed)
 - `Dockerfile`, `docker-compose.yml`: production server (gunicorn on port 8587)
 
 ### Accounts
@@ -53,6 +55,19 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | GET | `/api/user` | Admin only: list every user |
 | DELETE | `/api/user` | Admin only: delete a user `{uid}` |
 | POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`, default `gemini-2.5-flash`) |
+| GET | `/api/schedule?start=YYYY-MM-DD&days=7` | Calendar: each day from `start` (default today, Poway time) for `days` (max 42) with its sessions, spots left, and `booked_by_me` when logged in |
+| GET | `/api/schedule/meetings` | The weekly recurring meeting list |
+| PUT | `/api/schedule/meetings` | Admin only: set spots per session `{id, capacity}` |
+| GET | `/api/schedule/bookings` | Current user's upcoming reservations |
+| POST | `/api/schedule/bookings` | Reserve spots `{meeting_id, date, spots?}` (default 1) |
+| PUT | `/api/schedule/bookings` | Change how many spots your reservation holds `{meeting_id, date, spots}` |
+| DELETE | `/api/schedule/bookings` | Cancel a reservation `{meeting_id, date}` |
+| POST | `/api/schedule/sync` | Admin only: re-sync meetings from the feed now |
+
+### Meeting schedule
+The schedule is the real list of meetings held at Poway Recovery Center (13939 Poway Rd). Nothing is hard-coded: on start, and again every `SCHEDULE_REFRESH_SECONDS` (default 6 hours) when the calendar is read, the API downloads the [North County San Diego AA](https://ncsandiegoaa.org/meetings/) meeting feed (`SCHEDULE_FEED_URL`), keeps meetings whose location is "Poway Recovery Center" or whose address is 13939 Poway Rd, and updates the `meetings` table. Meetings dropped from the feed are marked inactive. If the feed can't be reached, the last synced schedule stays in use. "Today" and the calendar days follow Poway time (America/Los_Angeles).
+
+Each session starts with `SCHEDULE_DEFAULT_CAPACITY` spots (default 20). Admins can change that per meeting, and syncs never overwrite it. One person can hold up to `SCHEDULE_MAX_SPOTS_PER_USER` spots per meeting (default 5), for example to bring family. Reservations open `SCHEDULE_BOOKING_DAYS` ahead (default 30) and close when the meeting starts.
 
 ## Deploying
 Deploy it like Open Coding Society flask, on a server with Docker:

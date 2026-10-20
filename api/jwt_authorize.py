@@ -7,6 +7,21 @@ from flask import request, current_app, g
 from model.user import User
 
 
+def current_user_or_none():
+    ''' The logged-in user from the JWT cookie, or None (for endpoints that work either way) '''
+    token = request.cookies.get(current_app.config["JWT_TOKEN_NAME"])
+    if not token:
+        return None
+    try:
+        data = jwt.decode(token, current_app.config["SECRET_KEY"], algorithms=["HS256"])
+    except jwt.PyJWTError:
+        return None
+    user = User.query.filter_by(_uid=data.get("_uid")).first()
+    if user is None or data.get("token_version") != user.token_version:
+        return None
+    return user
+
+
 def token_required(roles=None):
     '''
     Guards API endpoints with the JWT stored in the request cookie.

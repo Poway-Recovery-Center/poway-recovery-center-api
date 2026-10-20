@@ -68,6 +68,19 @@ app.config['IS_PRODUCTION'] = (os.environ.get('IS_PRODUCTION') or 'false').lower
 app.config['GEMINI_API_KEY'] = os.environ.get('GEMINI_API_KEY') or ''
 app.config['GEMINI_MODEL'] = os.environ.get('GEMINI_MODEL') or 'gemini-2.5-flash'
 
+# Meeting schedule: synced from the live North County San Diego AA meeting feed, filtered to
+# meetings at the center (by location name or address). Re-synced in the background of schedule reads every few hours.
+app.config['SCHEDULE_FEED_URL'] = os.environ.get('SCHEDULE_FEED_URL') or \
+    'https://ncsandiegoaa.org/wp-admin/admin-ajax.php?action=meetings'
+app.config['SCHEDULE_SOURCE_NAME'] = 'North County San Diego AA (ncsandiegoaa.org)'
+app.config['SCHEDULE_SOURCE_URL'] = 'https://ncsandiegoaa.org/meetings/'
+app.config['SCHEDULE_LOCATION_MATCH'] = os.environ.get('SCHEDULE_LOCATION_MATCH') or 'Poway Recovery Center'
+app.config['SCHEDULE_ADDRESS_MATCH'] = os.environ.get('SCHEDULE_ADDRESS_MATCH') or '13939 Poway Rd'
+app.config['SCHEDULE_REFRESH_SECONDS'] = int(os.environ.get('SCHEDULE_REFRESH_SECONDS') or 6 * 3600)
+app.config['SCHEDULE_DEFAULT_CAPACITY'] = int(os.environ.get('SCHEDULE_DEFAULT_CAPACITY') or 20)
+app.config['SCHEDULE_MAX_SPOTS_PER_USER'] = int(os.environ.get('SCHEDULE_MAX_SPOTS_PER_USER') or 5)  # Spots one person can hold per meeting
+app.config['SCHEDULE_BOOKING_DAYS'] = int(os.environ.get('SCHEDULE_BOOKING_DAYS') or 30)  # How far ahead spots can be reserved
+
 # Database settings - SQLite in instance/volumes/ (OCS layout)
 dbName = 'user_management'
 os.makedirs(os.path.join(app.instance_path, 'volumes'), exist_ok=True)
