@@ -1,6 +1,6 @@
-""" Support assistant API: forwards the site chatbot conversation to Google Gemini.
+""" Support assistant API: forwards the site chatbot conversation to Google Gemini, with xAI Grok as a backup.
 
-The Gemini key lives only in .env (GEMINI_API_KEY) so it is never exposed in the GitHub Pages frontend.
+The keys live only in .env (GEMINI_API_KEY, XAI_API_KEY) so they are never exposed in the GitHub Pages frontend.
 """
 import json
 import urllib.error
@@ -14,6 +14,7 @@ chat_api = Blueprint('chat_api', __name__, url_prefix='/api')
 api = Api(chat_api)
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+XAI_URL = "https://api.x.ai/v1/chat/completions"
 MAX_MESSAGES = 20
 MAX_MESSAGE_CHARS = 1000
 
@@ -35,11 +36,68 @@ CRISIS_REPLY = ("I want to make sure you get the right support. If you are think
                 "or are in crisis, please call or text 988 now, or call 911 if you are in immediate danger.")
 
 
+class ProviderError(Exception):
+    """ An AI provider could not answer; the message is safe to show the user """
+
+
+def _post_json(url, payload, headers):
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode('utf-8'),
+        headers={"Content-Type": "application/json", **headers},
+        method='POST'
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as response:
+            return json.loads(response.read().decode('utf-8'))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode('utf-8', 'replace')
+        raise ProviderError(f"error {error.code}: {detail}")
+    except (urllib.error.URLError, TimeoutError) as error:
+        raise ProviderError(f"unreachable: {error}")
+
+
+def ask_gemini(contents):
+    payload = {
+        "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+        "contents": contents,
+        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 400},
+    }
+    url = GEMINI_URL.format(model=current_app.config['GEMINI_MODEL'])
+    data = _post_json(url, payload, {"x-goog-api-key": current_app.config['GEMINI_API_KEY']})
+    candidates = data.get('candidates') or []
+    parts = (candidates[0].get('content') or {}).get('parts', []) if candidates else []
+    # Empty when Gemini's safety filters block the reply; still point the person to real help
+    return ''.join(part.get('text', '') for part in parts).strip() or CRISIS_REPLY
+
+
+def ask_grok(contents):
+    # Grok uses the OpenAI chat format: Gemini's "model" role is "assistant"
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for content in contents:
+        role = 'assistant' if content["role"] == 'model' else 'user'
+        messages.append({"role": role, "content": content["parts"][0]["text"]})
+    payload = {
+        "model": current_app.config['XAI_MODEL'],
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 400,
+    }
+    data = _post_json(XAI_URL, payload, {"Authorization": f"Bearer {current_app.config['XAI_API_KEY']}"})
+    choices = data.get('choices') or []
+    reply = ((choices[0].get('message') or {}).get('content') or '') if choices else ''
+    return reply.strip() or CRISIS_REPLY
+
+
 class _Chat(Resource):
     def post(self):
-        api_key = current_app.config['GEMINI_API_KEY']
-        if not api_key:
-            return {"message": "The support assistant is not configured: set GEMINI_API_KEY in .env"}, 503
+        # Gemini first, Grok as the backup; keys live only in the backend .env
+        providers = [(name, ask) for name, ask, key in (
+            ('Gemini', ask_gemini, 'GEMINI_API_KEY'),
+            ('Grok', ask_grok, 'XAI_API_KEY'),
+        ) if current_app.config[key]]
+        if not providers:
+            return {"message": "The support assistant is not configured: set GEMINI_API_KEY or XAI_API_KEY in .env"}, 503
 
         body = request.get_json(silent=True) or {}
         messages = body.get('messages')
@@ -60,34 +118,12 @@ class _Chat(Resource):
         if not contents:
             return {"message": "messages must include text from the user"}, 400
 
-        payload = {
-            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
-            "contents": contents,
-            "generationConfig": {"temperature": 0.7, "maxOutputTokens": 400},
-        }
-        url = GEMINI_URL.format(model=current_app.config['GEMINI_MODEL'])
-        req = urllib.request.Request(
-            url,
-            data=json.dumps(payload).encode('utf-8'),
-            headers={"Content-Type": "application/json", "x-goog-api-key": api_key},
-            method='POST'
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=30) as response:
-                data = json.loads(response.read().decode('utf-8'))
-        except urllib.error.HTTPError as error:
-            detail = error.read().decode('utf-8', 'replace')
-            current_app.logger.error(f"Gemini error {error.code}: {detail}")
-            return {"message": f"The support assistant is unavailable (Gemini error {error.code})."}, 502
-        except (urllib.error.URLError, TimeoutError) as error:
-            current_app.logger.error(f"Gemini unreachable: {error}")
-            return {"message": "The support assistant could not reach Gemini."}, 502
-
-        candidates = data.get('candidates') or []
-        parts = (candidates[0].get('content') or {}).get('parts', []) if candidates else []
-        reply = ''.join(part.get('text', '') for part in parts).strip()
-        # Empty when Gemini's safety filters block the reply; still point the person to real help
-        return {"reply": reply or CRISIS_REPLY}
+        for name, ask in providers:
+            try:
+                return {"reply": ask(contents)}
+            except ProviderError as error:
+                current_app.logger.error(f"{name} {error}")
+        return {"message": "The support assistant is unavailable right now. Please try again soon."}, 502
 
 
 api.add_resource(_Chat, '/chat')
