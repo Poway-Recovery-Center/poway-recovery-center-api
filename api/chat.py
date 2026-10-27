@@ -1,6 +1,6 @@
-""" Support assistant API: forwards the site chatbot conversation to Google Gemini, with xAI Grok as a backup.
+""" Support assistant API: forwards the site chatbot conversation to Google Gemini, with Groq as a backup.
 
-The keys live only in .env (GEMINI_API_KEY, XAI_API_KEY) so they are never exposed in the GitHub Pages frontend.
+The keys live only in .env (GEMINI_API_KEY, GROQ_API_KEY) so they are never exposed in the GitHub Pages frontend.
 """
 import json
 import urllib.error
@@ -14,7 +14,7 @@ chat_api = Blueprint('chat_api', __name__, url_prefix='/api')
 api = Api(chat_api)
 
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-XAI_URL = "https://api.x.ai/v1/chat/completions"
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MAX_MESSAGES = 20
 MAX_MESSAGE_CHARS = 1000
 
@@ -40,15 +40,16 @@ class ProviderError(Exception):
     """ An AI provider could not answer; the message is safe to show the user """
 
 
-def _post_json(url, payload, headers):
+def _post_json(url, payload, headers, timeout=30):
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode('utf-8'),
-        headers={"Content-Type": "application/json", **headers},
+        # Groq's Cloudflare front rejects urllib's default User-Agent (error 1010)
+        headers={"Content-Type": "application/json", "User-Agent": "poway-recovery-center-api/1.0", **headers},
         method='POST'
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             return json.loads(response.read().decode('utf-8'))
     except urllib.error.HTTPError as error:
         detail = error.read().decode('utf-8', 'replace')
@@ -64,26 +65,27 @@ def ask_gemini(contents):
         "generationConfig": {"temperature": 0.7, "maxOutputTokens": 400},
     }
     url = GEMINI_URL.format(model=current_app.config['GEMINI_MODEL'])
-    data = _post_json(url, payload, {"x-goog-api-key": current_app.config['GEMINI_API_KEY']})
+    # Short timeout so an overloaded Gemini hands off to Groq quickly
+    data = _post_json(url, payload, {"x-goog-api-key": current_app.config['GEMINI_API_KEY']}, timeout=15)
     candidates = data.get('candidates') or []
     parts = (candidates[0].get('content') or {}).get('parts', []) if candidates else []
     # Empty when Gemini's safety filters block the reply; still point the person to real help
     return ''.join(part.get('text', '') for part in parts).strip() or CRISIS_REPLY
 
 
-def ask_grok(contents):
-    # Grok uses the OpenAI chat format: Gemini's "model" role is "assistant"
+def ask_groq(contents):
+    # Groq uses the OpenAI chat format: Gemini's "model" role is "assistant"
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     for content in contents:
         role = 'assistant' if content["role"] == 'model' else 'user'
         messages.append({"role": role, "content": content["parts"][0]["text"]})
     payload = {
-        "model": current_app.config['XAI_MODEL'],
+        "model": current_app.config['GROQ_MODEL'],
         "messages": messages,
         "temperature": 0.7,
         "max_tokens": 400,
     }
-    data = _post_json(XAI_URL, payload, {"Authorization": f"Bearer {current_app.config['XAI_API_KEY']}"})
+    data = _post_json(GROQ_URL, payload, {"Authorization": f"Bearer {current_app.config['GROQ_API_KEY']}"})
     choices = data.get('choices') or []
     reply = ((choices[0].get('message') or {}).get('content') or '') if choices else ''
     return reply.strip() or CRISIS_REPLY
@@ -91,13 +93,13 @@ def ask_grok(contents):
 
 class _Chat(Resource):
     def post(self):
-        # Gemini first, Grok as the backup; keys live only in the backend .env
+        # Gemini first, Groq as the backup; keys live only in the backend .env
         providers = [(name, ask) for name, ask, key in (
             ('Gemini', ask_gemini, 'GEMINI_API_KEY'),
-            ('Grok', ask_grok, 'XAI_API_KEY'),
+            ('Groq', ask_groq, 'GROQ_API_KEY'),
         ) if current_app.config[key]]
         if not providers:
-            return {"message": "The support assistant is not configured: set GEMINI_API_KEY or XAI_API_KEY in .env"}, 503
+            return {"message": "The support assistant is not configured: set GEMINI_API_KEY or GROQ_API_KEY in .env"}, 503
 
         body = request.get_json(silent=True) or {}
         messages = body.get('messages')

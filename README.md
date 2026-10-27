@@ -26,7 +26,7 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `model/schedule.py`: `Meeting` and `Booking` models; `sync_meetings()` pulls the center's real weekly meetings from the live feed
 - `api/schedule.py`: REST API for the meeting calendar and spot reservations
 - `model/contact.py`, `api/contact.py`: messages from the Contact Us form (admins read them on their profile page)
-- `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`
+- `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`, falling back to Groq (`GROQ_API_KEY`)
 - `.env`: secret key and passwords (not committed)
 - `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings, contact messages; created on first run, not committed)
 - `Dockerfile`, `docker-compose.yml`: production server (gunicorn on port 8587)
@@ -55,7 +55,7 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | PUT | `/api/user` | Update `{name, email, phone}` and/or `{current_password, new_password}` |
 | GET | `/api/user` | Admin only: list every user |
 | DELETE | `/api/user` | Admin only: delete a user `{uid}` |
-| POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`, default `gemini-2.5-flash`) |
+| POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`; backup `GROQ_API_KEY`, optional `GROQ_MODEL`, default `openai/gpt-oss-120b`) |
 | POST | `/api/contact` | Contact Us form `{name, message, topic?, email?, phone?}` (anyone) |
 | GET | `/api/contact` | Admin only: every contact message, newest first |
 | PUT | `/api/contact` | Admin only: mark a message handled `{id, handled}` |

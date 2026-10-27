@@ -66,10 +66,10 @@ app.config['IS_PRODUCTION'] = (os.environ.get('IS_PRODUCTION') or 'false').lower
 
 # Support assistant (Google Gemini) - get a key at https://aistudio.google.com/apikey
 app.config['GEMINI_API_KEY'] = os.environ.get('GEMINI_API_KEY') or ''
-app.config['GEMINI_MODEL'] = os.environ.get('GEMINI_MODEL') or 'gemini-3.8-flash'
-# Backup when Gemini fails or is not configured: xAI Grok - get a key at https://console.x.ai
-app.config['XAI_API_KEY'] = os.environ.get('XAI_API_KEY') or ''
-app.config['XAI_MODEL'] = os.environ.get('XAI_MODEL') or 'grok-4.7'
+app.config['GEMINI_MODEL'] = os.environ.get('GEMINI_MODEL') or 'gemini-3.6-flash'
+# Backup when Gemini fails or is not configured: Groq - get a key at https://console.groq.com/keys
+app.config['GROQ_API_KEY'] = os.environ.get('GROQ_API_KEY') or ''
+app.config['GROQ_MODEL'] = os.environ.get('GROQ_MODEL') or 'openai/gpt-oss-120b'
 
 # Meeting schedule: synced from the live North County San Diego AA meeting feed, filtered to
 # meetings at the center (by location name or address). Re-synced in the background of schedule reads every few hours.
