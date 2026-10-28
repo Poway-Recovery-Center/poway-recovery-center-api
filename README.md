@@ -26,6 +26,7 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `model/schedule.py`: `Meeting` and `Booking` models; `sync_meetings()` pulls the center's real weekly meetings from the live feed
 - `api/schedule.py`: REST API for the meeting calendar and spot reservations
 - `model/contact.py`, `api/contact.py`: messages from the Contact Us form (admins read them on their profile page)
+- `model/mood.py`, `api/mood.py`: Mood Room rooms, music, and the keywords that pick them (edit `ROOMS` to add moods)
 - `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`, falling back to Groq (`GROQ_API_KEY`)
 - `.env`: secret key and passwords (not committed)
 - `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings, contact messages; created on first run, not committed)
@@ -56,6 +57,7 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | GET | `/api/user` | Admin only: list every user |
 | DELETE | `/api/user` | Admin only: delete a user `{uid}` |
 | POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`; backup `GROQ_API_KEY`, optional `GROQ_MODEL`, default `openai/gpt-oss-120b`) |
+| POST | `/api/mood` | Mood Room `{text}` → the matching room `{label, title, description, music, music_description, music_url, prompt}` (anyone; nothing stored) |
 | POST | `/api/contact` | Contact Us form `{name, message, topic?, email?, phone?}` (anyone) |
 | GET | `/api/contact` | Admin only: every contact message, newest first |
 | PUT | `/api/contact` | Admin only: mark a message handled `{id, handled}` |

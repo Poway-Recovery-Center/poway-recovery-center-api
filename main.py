@@ -12,6 +12,7 @@ from flask import jsonify
 from __init__ import app, db
 from api.chat import chat_api
 from api.contact import contact_api
+from api.mood import mood_api
 from api.schedule import schedule_api
 from api.user import user_api
 from model.contact import initContacts
@@ -23,6 +24,7 @@ from model.user import initUsers
 app.register_blueprint(user_api)
 app.register_blueprint(chat_api)
 app.register_blueprint(contact_api)
+app.register_blueprint(mood_api)
 app.register_blueprint(schedule_api)
 
 
