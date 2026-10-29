@@ -1,5 +1,5 @@
 # Poway Recovery Center API: local development (production uses Dockerfile / docker-compose.yml)
-PORT ?= 8587
+PORT ?= 8450
 LOG_FILE = /tmp/flask$(PORT).log
 VENV = .venv
 PYTHON = $(VENV)/bin/python

@@ -4,7 +4,7 @@ Flask backend for user accounts on the [Poway Recovery Center site](https://gith
 
 ## Run locally
 ```bash
-make            # creates .venv, installs requirements, starts the API on http://localhost:8587
+make            # creates .venv, installs requirements, starts the API on http://localhost:8450
 make stop       # stops it
 ```
 Then run `make` in the poway-recovery-center repo and visit `http://localhost:4000`.
@@ -30,7 +30,7 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`, falling back to Groq (`GROQ_API_KEY`)
 - `.env`: secret key and passwords (not committed)
 - `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings, contact messages; created on first run, not committed)
-- `Dockerfile`, `docker-compose.yml`: production server (gunicorn on port 8587)
+- `Dockerfile`, `docker-compose.yml`: production server (gunicorn on port 8450)
 
 ### Accounts
 `initUsers()` creates these users when the API starts (the list is `MEMBERS` in `__init__.py`). Existing users keep their password and profile; only their role is updated to match the list.
@@ -82,8 +82,8 @@ Deploy it like Open Coding Society flask, on a server with Docker:
 git clone https://github.com/AdyaShipekar/poway-recovery-center-api.git
 cd poway-recovery-center-api
 cp /path/to/your/.env .env     # SECRET_KEY, ADMIN_PASSWORD, member passwords, IS_PRODUCTION=true
-docker compose up -d --build   # serves the API on port 8587; database is kept in instance/
+docker compose up -d --build   # serves the API on port 8450; database is kept in instance/
 ```
-Put it behind HTTPS at https://prc-api.opencodingsociety.com (e.g. nginx + certbot, as in OCS `nginx_flask_8587.conf`). `IS_PRODUCTION=true` is required there: the frontend is on a different origin (prc.opencodingsociety.com), so the login cookie must be `SameSite=None; Secure`.
+Put it behind HTTPS at https://prc-api.opencodingsociety.com (e.g. nginx + certbot, as in OCS `nginx_flask_8450.conf`). `IS_PRODUCTION=true` is required there: the frontend is on a different origin (prc.opencodingsociety.com), so the login cookie must be `SameSite=None; Secure`.
 
 The frontend's `js/api/config.js` points `deployedPythonURI` at that address, and `https://prc.opencodingsociety.com` is already an allowed CORS origin. Add any other frontend address to `ALLOWED_ORIGINS` in `.env`.

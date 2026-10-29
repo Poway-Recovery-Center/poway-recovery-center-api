@@ -18,8 +18,8 @@ load_dotenv(os.path.join(basedir, '.env'))
 # Setup of key Flask object (app); instance folder holds the database
 app = Flask(__name__, instance_path=os.path.join(basedir, 'instance'))
 
-# Configure Flask Port, default to 8587 which is the same as Open Coding Society flask
-app.config['FLASK_PORT'] = int(os.environ.get('FLASK_PORT') or 8587)
+# Configure Flask Port, default to 8450 which is the same as Open Coding Society flask
+app.config['FLASK_PORT'] = int(os.environ.get('FLASK_PORT') or 8450)
 
 # Allowed servers for cross-origin resource sharing (CORS)
 allowed_origins = [

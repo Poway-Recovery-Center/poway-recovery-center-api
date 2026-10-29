@@ -21,10 +21,10 @@ USER appuser
 
 # One worker because the database is SQLite; threads handle concurrent requests
 ENV FLASK_ENV=production \
-    GUNICORN_CMD_ARGS="--workers=1 --threads=4 --bind=0.0.0.0:8587 --timeout=30 --access-logfile -"
+    GUNICORN_CMD_ARGS="--workers=1 --threads=4 --bind=0.0.0.0:8450 --timeout=30 --access-logfile -"
 
 # Expose application port
-EXPOSE 8587
+EXPOSE 8450
 
 # Start Gunicorn server
 CMD ["gunicorn", "main:app"]
