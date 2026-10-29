@@ -27,7 +27,7 @@ allowed_origins = [
     'http://127.0.0.1:4000',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
-    'https://adyashipekar.github.io',  # Deployed GitHub Pages site (poway-recovery-center repo)
+    'https://prc.opencodingsociety.com',  # Deployed frontend (poway-recovery-center repo)
 ]
 # Any other deployed frontend(s), comma separated in .env
 allowed_origins += [o.strip() for o in (os.environ.get('ALLOWED_ORIGINS') or '').split(',') if o.strip()]

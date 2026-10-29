@@ -84,6 +84,6 @@ cd poway-recovery-center-api
 cp /path/to/your/.env .env     # SECRET_KEY, ADMIN_PASSWORD, member passwords, IS_PRODUCTION=true
 docker compose up -d --build   # serves the API on port 8587; database is kept in instance/
 ```
-Put it behind HTTPS (e.g. nginx + certbot, as in OCS `nginx_flask_8587.conf`). `IS_PRODUCTION=true` is required there: the frontend is on a different domain (github.io), so the login cookie must be `SameSite=None; Secure`.
+Put it behind HTTPS at https://prc-api.opencodingsociety.com (e.g. nginx + certbot, as in OCS `nginx_flask_8587.conf`). `IS_PRODUCTION=true` is required there: the frontend is on a different origin (prc.opencodingsociety.com), so the login cookie must be `SameSite=None; Secure`.
 
-Then set that https address as `deployedPythonURI` in the frontend's `js/api/config.js`. `https://adyashipekar.github.io` is already an allowed CORS origin. Add any other frontend address to `ALLOWED_ORIGINS` in `.env`.
+The frontend's `js/api/config.js` points `deployedPythonURI` at that address, and `https://prc.opencodingsociety.com` is already an allowed CORS origin. Add any other frontend address to `ALLOWED_ORIGINS` in `.env`.
