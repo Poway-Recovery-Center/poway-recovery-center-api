@@ -1,0 +1,47 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+    <div class="px-5 py-5 mx-auto">
+        <div class="container py-4">
+            <header class="pb-3 mb-4 border-bottom border-primary text-light">
+                <span class="fs-4">{{ title }}</span>
+            </header>
+        </div>
+
+        <div class="container py-4 text-light bg-primary">
+
+            <div class="container bg-secondary py-4">
+                <div class="p-5 mb-4 bg-light text-dark rounded-3">
+                    <table id="dataTable" class="table table-striped" style="width:100%">
+                        <thead>
+                            <tr>
+                                {% for label, key in columns %}
+                                <th>{{ label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                            <tr>
+                                {% for label, key in columns %}
+                                <td>{{ row[key] }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        $(document).ready(function() {
+            $('#dataTable').DataTable();
+        });
+    </script>
+{% endblock %}

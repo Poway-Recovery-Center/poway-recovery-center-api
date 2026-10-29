@@ -17,6 +17,9 @@ GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:ge
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 MAX_MESSAGES = 20
 MAX_MESSAGE_CHARS = 1000
+# Both models "think" before answering and that reasoning counts against this cap, so it must leave
+# plenty of room for the reply itself; the system prompt is what keeps replies short
+MAX_OUTPUT_TOKENS = 2048
 
 SYSTEM_PROMPT = """You are the support assistant on the Poway Recovery Center website, a compassionate,
 trauma-informed peer recovery and mental-health community in Poway, California.
@@ -62,15 +65,28 @@ def ask_gemini(contents):
     payload = {
         "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
         "contents": contents,
-        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 400},
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": MAX_OUTPUT_TOKENS,
+            "thinkingConfig": {"thinkingLevel": "low"},
+        },
     }
     url = GEMINI_URL.format(model=current_app.config['GEMINI_MODEL'])
     # Short timeout so an overloaded Gemini hands off to Groq quickly
     data = _post_json(url, payload, {"x-goog-api-key": current_app.config['GEMINI_API_KEY']}, timeout=15)
     candidates = data.get('candidates') or []
-    parts = (candidates[0].get('content') or {}).get('parts', []) if candidates else []
-    # Empty when Gemini's safety filters block the reply; still point the person to real help
-    return ''.join(part.get('text', '') for part in parts).strip() or CRISIS_REPLY
+    if not candidates:
+        # No candidates means the prompt itself was blocked by Gemini's safety filters; still point the person to real help
+        return CRISIS_REPLY
+    finish = candidates[0].get('finishReason')
+    if finish in ('SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST'):
+        return CRISIS_REPLY
+    parts = (candidates[0].get('content') or {}).get('parts', [])
+    reply = ''.join(part.get('text', '') for part in parts if not part.get('thought')).strip()
+    if finish == 'MAX_TOKENS' or not reply:
+        # A cut-off or empty reply would read as broken; let Groq answer instead
+        raise ProviderError(f"incomplete reply (finishReason {finish})")
+    return reply
 
 
 def ask_groq(contents):
@@ -83,12 +99,18 @@ def ask_groq(contents):
         "model": current_app.config['GROQ_MODEL'],
         "messages": messages,
         "temperature": 0.7,
-        "max_tokens": 400,
+        "max_tokens": MAX_OUTPUT_TOKENS,
     }
     data = _post_json(GROQ_URL, payload, {"Authorization": f"Bearer {current_app.config['GROQ_API_KEY']}"})
     choices = data.get('choices') or []
-    reply = ((choices[0].get('message') or {}).get('content') or '') if choices else ''
-    return reply.strip() or CRISIS_REPLY
+    if not choices:
+        raise ProviderError("no reply")
+    if choices[0].get('finish_reason') == 'content_filter':
+        return CRISIS_REPLY
+    reply = ((choices[0].get('message') or {}).get('content') or '').strip()
+    if choices[0].get('finish_reason') == 'length' or not reply:
+        raise ProviderError(f"incomplete reply (finish_reason {choices[0].get('finish_reason')})")
+    return reply
 
 
 class _Chat(Resource):

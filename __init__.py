@@ -63,6 +63,9 @@ app.config['JWT_TOKEN_MAX_AGE'] = int(os.environ.get('JWT_TOKEN_MAX_AGE') or 604
 # Production = frontend on GitHub Pages + backend on its own HTTPS domain,
 # which needs SameSite=None; Secure cookies (same switch OCS uses)
 app.config['IS_PRODUCTION'] = (os.environ.get('IS_PRODUCTION') or 'false').lower() == 'true'
+# Admin login page session cookie: HTTPS-only when deployed
+app.config['SESSION_COOKIE_SECURE'] = app.config['IS_PRODUCTION']
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Support assistant (Google Gemini) - get a key at https://aistudio.google.com/apikey
 app.config['GEMINI_API_KEY'] = os.environ.get('GEMINI_API_KEY') or ''
