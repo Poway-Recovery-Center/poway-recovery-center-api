@@ -12,10 +12,12 @@ from flask import render_template
 from __init__ import app, db
 from api.admin import admin
 from api.chat import chat_api
+from api.checkin import checkin_api
 from api.contact import contact_api
 from api.mood import mood_api
 from api.schedule import schedule_api
 from api.user import user_api
+from model.checkin import initCheckIns
 from model.contact import initContacts
 from model.schedule import initSchedules
 from model.user import initUsers
@@ -25,6 +27,7 @@ from model.user import initUsers
 app.register_blueprint(admin)
 app.register_blueprint(user_api)
 app.register_blueprint(chat_api)
+app.register_blueprint(checkin_api)
 app.register_blueprint(contact_api)
 app.register_blueprint(mood_api)
 app.register_blueprint(schedule_api)
@@ -40,6 +43,7 @@ def index():
 initUsers()
 initSchedules()
 initContacts()
+initCheckIns()
 
 if __name__ == "__main__":
     print(f"Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
