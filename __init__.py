@@ -58,7 +58,9 @@ app.config['MEMBERS'] = [
 
 # Browser settings
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or 'prc-flask-secret-key-set-SECRET_KEY-in-env'
-app.config['JWT_TOKEN_NAME'] = os.environ.get('JWT_TOKEN_NAME') or 'jwt_python_flask'
+# PRC-specific name: OCS's flask also uses 'jwt_python_flask', and a browser holding an OCS cookie for
+# .opencodingsociety.com would send both, so the API read the wrong one and the login page looped
+app.config['JWT_TOKEN_NAME'] = os.environ.get('JWT_TOKEN_NAME') or 'prc_jwt'
 app.config['JWT_TOKEN_MAX_AGE'] = int(os.environ.get('JWT_TOKEN_MAX_AGE') or 604800)  # 1 week
 # Production = frontend on GitHub Pages + backend on its own HTTPS domain,
 # which needs SameSite=None; Secure cookies (same switch OCS uses)
@@ -66,6 +68,7 @@ app.config['IS_PRODUCTION'] = (os.environ.get('IS_PRODUCTION') or 'false').lower
 # Admin login page session cookie: HTTPS-only when deployed
 app.config['SESSION_COOKIE_SECURE'] = app.config['IS_PRODUCTION']
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_NAME'] = 'prc_session'  # Avoid colliding with other opencodingsociety.com apps' "session" cookie
 
 # Support assistant (Google Gemini) - get a key at https://aistudio.google.com/apikey
 app.config['GEMINI_API_KEY'] = os.environ.get('GEMINI_API_KEY') or ''
