@@ -1,0 +1,50 @@
+{% extends "layouts/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+    <div class="px-5 py-5 mx-auto">
+        <div class="container py-4">
+            <header class="pb-3 mb-4 border-bottom border-primary text-light">
+                <span class="fs-4">{{ title }}</span>
+                <p class="mb-0 small">Notes show on the site as soon as they're posted. Remove anything that breaks the wall's guidelines.</p>
+            </header>
+        </div>
+
+        <div class="container py-4 text-light bg-primary">
+            <div class="container bg-secondary py-4">
+                <div class="p-5 mb-4 bg-light text-dark rounded-3">
+                    <table id="dataTable" class="table table-striped" style="width:100%">
+                        <thead>
+                            <tr><th>ID</th><th>Reflection</th><th>Kind</th><th>Hearts</th><th>Posted (UTC)</th><th></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for note in notes %}
+                            <tr>
+                                <td>{{ note.id }}</td>
+                                <td>{{ note.text }}</td>
+                                <td>{{ note.tag_label }}</td>
+                                <td>{{ note.holds }}</td>
+                                <td>{{ note.posted }}</td>
+                                <td>
+                                    <form method="post" action="{{ url_for('admin.delete_reflection', id=note.id) }}" onsubmit="return confirm('Remove this reflection from the wall?');">
+                                        <button class="btn btn-sm btn-danger" type="submit">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        $(document).ready(function() {
+            $('#dataTable').DataTable({ order: [[0, 'desc']] });
+        });
+    </script>
+{% endblock %}

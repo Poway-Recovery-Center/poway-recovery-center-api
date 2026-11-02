@@ -6,7 +6,9 @@ from functools import wraps
 
 from flask import Blueprint, render_template, request, redirect, url_for, session
 
+from __init__ import db
 from model.contact import ContactMessage
+from model.reflection import Reflection
 from model.schedule import Meeting
 from model.user import User
 
@@ -103,3 +105,21 @@ def contacts():
     for row in rows:
         row['received'] = (row['created_at'] or '')[:10]
     return render_template('table.html', title='Contact Messages', columns=columns, rows=rows)
+
+
+@admin.route('/reflections/')
+@admin_required
+def reflections():
+    notes = [note.read() for note in Reflection.query.order_by(Reflection.id.desc()).all()]
+    for note in notes:
+        note['posted'] = (note['created_at'] or '')[:16].replace('T', ' ')
+    return render_template('reflections.html', title='Reflection Wall', notes=notes)
+
+
+@admin.route('/reflections/<int:id>/delete', methods=['POST'])
+@admin_required
+def delete_reflection(id):
+    note = db.session.get(Reflection, id)
+    if note is not None:
+        note.delete()
+    return redirect(url_for('admin.reflections'))
