@@ -20,7 +20,7 @@ class CheckInAPI:
 
         @token_required()
         def post(self):
-            """ Save this week's check-in {mood, sleep, cravings, stress, actions, note}; saving again updates the week """
+            """ Save this week's check-in {mood, sleep, connection, stress, actions, note}; saving again updates the week """
             ratings, actions, note, error = CheckIn.validate(request.get_json(silent=True) or {})
             if error:
                 return {"message": error}, 400

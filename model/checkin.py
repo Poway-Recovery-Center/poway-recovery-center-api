@@ -1,6 +1,6 @@
 """ Recovery tracker check-in model (same pattern as model/schedule.py Booking)
 
-One row per user per week: 1-5 ratings for mood, sleep, cravings and stress,
+One row per user per week: 1-5 ratings for mood, sleep, connection and stress,
 the recovery actions they took that week, and an optional note.
 A week that drops dangerously low is flagged (alerted) so admins/counselors see it on GET /api/checkins/alerts.
 """
@@ -17,7 +17,7 @@ MAX_NOTE_CHARS = 280
 METRICS = {
     'mood': ("your mood was very low", False),
     'sleep': ("sleep was very poor", False),
-    'cravings': ("cravings were overwhelming", True),
+    'connection': ("you felt very isolated", False),
     'stress': ("stress was very high", True),
 }
 # Recovery actions a user can tick for the week (labels live in js/recovery-tracker.js)
@@ -41,7 +41,7 @@ class CheckIn(db.Model):
         id (Column): Primary key.
         _user_id (Column): The user who checked in.
         _week (Column): Monday of the week (America/Los_Angeles).
-        _mood, _sleep, _cravings, _stress (Column): 1-5 ratings (high cravings or stress is the harder end).
+        _mood, _sleep, _connection, _stress (Column): 1-5 ratings (high stress is the harder end).
         _actions (Column): Comma separated ACTIONS keys done that week.
         _note (Column): Optional note, up to MAX_NOTE_CHARS.
         _alerted (Column): Set once the week dropped low enough to alert counselors; stays set for that week.
@@ -55,7 +55,7 @@ class CheckIn(db.Model):
     _week = db.Column(db.Date, nullable=False)
     _mood = db.Column(db.Integer, nullable=False)
     _sleep = db.Column(db.Integer, nullable=False)
-    _cravings = db.Column(db.Integer, nullable=False)
+    _connection = db.Column(db.Integer, nullable=False)
     _stress = db.Column(db.Integer, nullable=False)
     _actions = db.Column(db.String(255), default='', nullable=False)
     _note = db.Column(db.String(MAX_NOTE_CHARS), default='', nullable=False)
