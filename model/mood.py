@@ -280,6 +280,21 @@ DEFAULT_ROOM = {
     "prompt": "Complete this sentence privately: “Right now, the smallest helpful thing might be…”",
 }
 
+# Music anyone can open straight away, before typing anything (shown beside the Mood Room's text box)
+MUSIC_PICKS = [
+    ("Calming music", "Slow, gentle tracks to settle down", "calming music"),
+    ("Lo-fi beats", "Relaxed beats to take the pressure off", "lofi beats"),
+    ("Nature sounds", "Rain, water and birdsong", "nature sounds"),
+    ("Ambient piano", "Soft instrumental for a slower pace", "ambient piano"),
+    ("Upbeat music", "Feel-good songs to lift your energy", "upbeat happy music"),
+    ("Sleep music", "Quiet tracks for winding down", "sleep music"),
+]
+
+
+def music_picks():
+    return [{"title": t, "description": d, "url": music_url(term)} for t, d, term in MUSIC_PICKS]
+
+
 # One regex per room: each keyword at a word start; curly apostrophes are normalized before matching
 _PATTERNS = [(room, re.compile(r"\b(?:" + "|".join(re.escape(k) for k in room["keys"]) + ")")) for room in ROOMS]
 
