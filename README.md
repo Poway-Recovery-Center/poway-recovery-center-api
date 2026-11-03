@@ -27,6 +27,7 @@ python main.py      # creates instance/volumes/user_management.db and starts the
 - `api/schedule.py`: REST API for the meeting calendar and spot reservations
 - `model/contact.py`, `api/contact.py`: messages from the Contact Us form (admins read them on their profile page)
 - `model/mood.py`, `api/mood.py`: Mood Room rooms, music, and the keywords that pick them (edit `ROOMS` to add moods)
+- `model/program.py`, `api/program.py`: the page content for each recovery group that meets at the center (copied from powayrecoverycenter.org)
 - `api/chat.py`: support assistant; forwards the site chatbot to Google Gemini using `GEMINI_API_KEY` from `.env`, falling back to Groq (`GROQ_API_KEY`)
 - `.env`: secret key and passwords (not committed)
 - `instance/volumes/user_management.db`: SQLite database (users, meetings, bookings, contact messages; created on first run, not committed)
@@ -58,6 +59,9 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | DELETE | `/api/user` | Admin only: delete a user `{uid}` |
 | POST | `/api/chat` | Support assistant `{messages: [{role: "user"\|"model", text}]}` → `{reply}` (needs `GEMINI_API_KEY` in `.env`; optional `GEMINI_MODEL`; backup `GROQ_API_KEY`, optional `GROQ_MODEL`, default `openai/gpt-oss-120b`) |
 | POST | `/api/mood` | Mood Room `{text}` → the matching room `{label, title, description, music, music_description, music_url, prompt}` (anyone; nothing stored) |
+| GET | `/api/mood/music` | Quick music picks shown before a room opens `[{title, description, url}]` |
+| GET | `/api/programs` | Every recovery group `[{slug, name, short, image}]` |
+| GET | `/api/programs/<slug>` | One group's page `{name, intro, sections, image, source_url}` (`aa`, `aca`, `al-anon`, `alateen`, `na`, `ca`, `ga`, `sa`) |
 | POST | `/api/contact` | Contact Us form `{name, message, topic?, email?, phone?}` (anyone) |
 | GET | `/api/contact` | Admin only: every contact message, newest first |
 | PUT | `/api/contact` | Admin only: mark a message handled `{id, handled}` |
@@ -72,7 +76,7 @@ Starting passwords come from `.env`: `ADMIN_PASSWORD` for the site admin and `<F
 | POST | `/api/schedule/sync` | Admin only: re-sync meetings from the feed now |
 
 ### Meeting schedule
-The schedule is the real list of meetings held at Poway Recovery Center (13939 Poway Rd). Nothing is hard-coded: on start, and again every `SCHEDULE_REFRESH_SECONDS` (default 6 hours) when the calendar is read, the API downloads the [North County San Diego AA](https://ncsandiegoaa.org/meetings/) meeting feed (`SCHEDULE_FEED_URL`), keeps meetings whose location is "Poway Recovery Center" or whose address is 13939 Poway Rd, and updates the `meetings` table. Meetings dropped from the feed are marked inactive. If the feed can't be reached, the last synced schedule stays in use. "Today" and the calendar days follow Poway time (America/Los_Angeles).
+The schedule is the real list of meetings held at Poway Recovery Center, for every program that meets there (AA, Al-Anon, NA, GA, SA...). Nothing is hard-coded: on start, and again every `SCHEDULE_REFRESH_SECONDS` (default 6 hours) when the calendar is read, the API reads the next two weeks of the center's own meeting calendar on [powayrecoverycenter.org](https://powayrecoverycenter.org/meeting-schedule/) (`SCHEDULE_SITE_URL`; an EventON calendar, plus each event's page for its room and Zoom link) and updates the `meetings` table. Each meeting's program (from its title) is sent as `program` so the site can filter and color by group. Meetings dropped from the calendar are marked inactive. If it can't be reached, the last synced schedule stays in use. "Today" and the calendar days follow Poway time (America/Los_Angeles).
 
 Each session starts with `SCHEDULE_DEFAULT_CAPACITY` spots (default 20). Admins can change that per meeting, and syncs never overwrite it. One person can hold up to `SCHEDULE_MAX_SPOTS_PER_USER` spots per meeting (default 5), for example to bring family. Reservations open `SCHEDULE_BOOKING_DAYS` ahead (default 30) and close when the meeting starts.
 

@@ -77,14 +77,11 @@ app.config['GEMINI_MODEL'] = os.environ.get('GEMINI_MODEL') or 'gemini-3.6-flash
 app.config['GROQ_API_KEY'] = os.environ.get('GROQ_API_KEY') or ''
 app.config['GROQ_MODEL'] = os.environ.get('GROQ_MODEL') or 'openai/gpt-oss-120b'
 
-# Meeting schedule: synced from the live North County San Diego AA meeting feed, filtered to
-# meetings at the center (by location name or address). Re-synced in the background of schedule reads every few hours.
-app.config['SCHEDULE_FEED_URL'] = os.environ.get('SCHEDULE_FEED_URL') or \
-    'https://ncsandiegoaa.org/wp-admin/admin-ajax.php?action=meetings'
-app.config['SCHEDULE_SOURCE_NAME'] = 'North County San Diego AA (ncsandiegoaa.org)'
-app.config['SCHEDULE_SOURCE_URL'] = 'https://ncsandiegoaa.org/meetings/'
-app.config['SCHEDULE_LOCATION_MATCH'] = os.environ.get('SCHEDULE_LOCATION_MATCH') or 'Poway Recovery Center'
-app.config['SCHEDULE_ADDRESS_MATCH'] = os.environ.get('SCHEDULE_ADDRESS_MATCH') or '13939 Poway Rd'
+# Meeting schedule: synced from Poway Recovery Center's own meeting calendar on powayrecoverycenter.org
+# (every program that meets at the center: AA, Al-Anon, NA, GA, SA...). Re-synced on schedule reads every few hours.
+app.config['SCHEDULE_SITE_URL'] = os.environ.get('SCHEDULE_SITE_URL') or 'https://powayrecoverycenter.org'
+app.config['SCHEDULE_SOURCE_NAME'] = 'Poway Recovery Center meeting calendar (powayrecoverycenter.org)'
+app.config['SCHEDULE_SOURCE_URL'] = 'https://powayrecoverycenter.org/meeting-schedule/'
 app.config['SCHEDULE_REFRESH_SECONDS'] = int(os.environ.get('SCHEDULE_REFRESH_SECONDS') or 6 * 3600)
 app.config['SCHEDULE_DEFAULT_CAPACITY'] = int(os.environ.get('SCHEDULE_DEFAULT_CAPACITY') or 20)
 app.config['SCHEDULE_MAX_SPOTS_PER_USER'] = int(os.environ.get('SCHEDULE_MAX_SPOTS_PER_USER') or 5)  # Spots one person can hold per meeting
